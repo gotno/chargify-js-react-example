@@ -31,13 +31,13 @@ const ChargifyForm = ({ paymentType }) => {
         selector: '#chargify-form',
 
         // (i.e. '1a2cdsdn3lkn54lnlkn')
-        publicKey: 'chjs_ts98csq6t5c5s9mywfcsytkb',
+        publicKey: 'MY_PUBLIC_KEY',
 
         // form type (possible values: 'card' or 'bank')
         type: paymentType || 'card',
 
         // points to your Chargify site
-        serverHost: 'https://billing-portal.chargify.test'
+        serverHost: 'https://acme.chargify.test'
       });
 
       return undefined;
