@@ -1,35 +1,14 @@
-import React, { useState, useEffect } from 'react';
-
-const initialize = (paymentType) => {
-  const chargify = new window.Chargify();
-
-  chargify.load({
-    // selector where the iframe will be included in the host's HTML (i.e. '#chargify-form')
-    // optional if you have a `selector` on each and every field
-    selector: '#chargify-form',
-
-    // (i.e. '1a2cdsdn3lkn54lnlkn')
-    publicKey: 'chjs_ts98csq6t5c5s9mywfcsytkb',
-
-    // form type (possible values: 'card' or 'bank')
-    type: paymentType || 'card',
-
-    // points to your Chargify site
-    serverHost: 'https://billing-portal.chargify.test'
-  });
-
-  return chargify;
-}
+import React, { useState, useEffect, useRef } from 'react';
 
 const ChargifyForm = ({ paymentType }) => {
-  const chargifyForm = React.createRef();
+  const chargifyForm = useRef();
+  const chargify = useRef(new window.Chargify());
   const [token, setToken] = useState('');
-  let chargify = null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    chargify.token(
+    chargify.current.token(
       chargifyForm.current,
 
       (token) => {
@@ -46,18 +25,32 @@ const ChargifyForm = ({ paymentType }) => {
   // https://stackoverflow.com/questions/58140009/how-to-use-variable-declared-in-useeffect-in-another-function
   useEffect(
     () => {
-      chargify = initialize(paymentType);
+      chargify.current.load({
+        // selector where the iframe will be included in the host's HTML (i.e. '#chargify-form')
+        // optional if you have a `selector` on each and every field
+        selector: '#chargify-form',
+
+        // (i.e. '1a2cdsdn3lkn54lnlkn')
+        publicKey: 'chjs_ts98csq6t5c5s9mywfcsytkb',
+
+        // form type (possible values: 'card' or 'bank')
+        type: paymentType || 'card',
+
+        // points to your Chargify site
+        serverHost: 'https://billing-portal.chargify.test'
+      });
+
       return undefined;
     }, []);
 
   // https://stackoverflow.com/questions/53464595/how-to-use-componentwillmount-in-react-hooks
   useEffect(
     () => {
-      chargify.load({type: paymentType});
+      chargify.current.load({type: paymentType});
       setToken('');
 
       return () => {
-        chargify.unload();
+        chargify.current.unload();
       };
     }, [chargify, paymentType]);
 
