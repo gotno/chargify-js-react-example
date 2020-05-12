@@ -1,23 +1,40 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 
-class ChargifyForm extends Component {
-  constructor(props) {
-    super(props);
-   
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.chargifyForm = React.createRef();
-    this.state = {token: ''};
-  } 
+const initialize = (paymentType) => {
+  const chargify = new window.Chargify();
 
-  handleSubmit(e) {
+  chargify.load({
+    // selector where the iframe will be included in the host's HTML (i.e. '#chargify-form')
+    // optional if you have a `selector` on each and every field
+    selector: '#chargify-form',
+
+    // (i.e. '1a2cdsdn3lkn54lnlkn')
+    publicKey: 'chjs_ts98csq6t5c5s9mywfcsytkb',
+
+    // form type (possible values: 'card' or 'bank')
+    type: paymentType || 'card',
+
+    // points to your Chargify site
+    serverHost: 'https://billing-portal.chargify.test'
+  });
+
+  return chargify;
+}
+
+const ChargifyForm = ({ paymentType }) => {
+  const chargifyForm = React.createRef();
+  const [token, setToken] = useState('');
+  let chargify = null;
+
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    this.chargify.token(
-      this.chargifyForm.current,
+    chargify.token(
+      chargifyForm.current,
 
       (token) => {
         console.log('{host} token SUCCESS - token: ', token);
-        this.setState({token: token});
+        setToken(token);
       },
 
       (error) => {
@@ -26,49 +43,36 @@ class ChargifyForm extends Component {
     );
   }
 
-  componentDidMount() {
-    this.chargify = new window.Chargify();
+  // https://stackoverflow.com/questions/58140009/how-to-use-variable-declared-in-useeffect-in-another-function
+  useEffect(
+    () => {
+      chargify = initialize(paymentType);
+      return undefined;
+    }, []);
 
-    this.chargify.load({
-      // selector where the iframe will be included in the host's HTML (i.e. '#chargify-form')
-      // optional if you have a `selector` on each and every field
-      selector: '#chargify-form',
-  
-      // (i.e. '1a2cdsdn3lkn54lnlkn')
-      publicKey: 'MY_PUBLIC_KEY',
-  
-      // form type (possible values: 'card' or 'bank')
-      type: this.state.type || 'card',
-  
-      // points to your Chargify site
-      serverHost: 'https://acme.chargify.test'
-    });
-  }
+  // https://stackoverflow.com/questions/53464595/how-to-use-componentwillmount-in-react-hooks
+  useEffect(
+    () => {
+      chargify.load({type: paymentType});
+      setToken('');
 
-  componentDidUpdate(prevProps) {  
-    if (prevProps.type !== this.props.type) {
-      this.chargify.load({type: this.props.type});
-      this.setState({token: ''});
-    }
-  }
+      return () => {
+        chargify.unload();
+      };
+    }, [chargify, paymentType]);
 
-  componentWillUnmount() {
-    this.chargify.unload();
-  }
+  return (
+    <form onSubmit={handleSubmit} ref={chargifyForm}>
+      <div id="chargify-form"></div>
 
-  render() {
-    return(
-      <form onSubmit={this.handleSubmit} ref={this.chargifyForm}>
-        <div id="chargify-form"></div>
-        <label>
-          Hidden Token: <input id="host-token" disabled value={this.state.token}/>
-        </label>
-        <p>
-          <button type="submit">Submit Host Form</button>
-        </p>
-      </form>
-    )
-  }
+      <label>
+        Hidden Token: <input id="host-token" disabled value={token}/>
+      </label>
+      <p>
+        <button type="submit">Submit Host Form</button>
+      </p>
+    </form>
+  );
 }
 
 export default ChargifyForm;
